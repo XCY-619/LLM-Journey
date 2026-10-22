@@ -83,6 +83,10 @@ def run_react_agent(user_prompt: str, max_steps: int = 5):
             tools=tools
         )
 
+        print("\n==================== 1. 模型接收到的完整原始 JSON ====================")
+        print(messages)
+        print("===========================================================================\n")
+
         response_message = response.choices[0].message
         finish_reason = response.choices[0].finish_reason
 
@@ -90,6 +94,10 @@ def run_react_agent(user_prompt: str, max_steps: int = 5):
 
         # 2. 无论模型是说话还是调工具，都先追加进对话历史
         messages.append(response_message)
+
+        print("\n==================== 2. 模型输出的消息内容 ====================")
+        print(response_message.content)
+        print("===========================================================================\n")
 
         # 3. 判定分支 A：模型输出终止，给出了最终答案
         if finish_reason == "stop":
@@ -135,4 +143,4 @@ def run_react_agent(user_prompt: str, max_steps: int = 5):
 # =====================================================================
 if __name__ == "__main__":
     # 测试场景：同时包含查时间与做计算的组合任务
-    run_react_agent("请问现在几点了？顺便帮我算一下 1234 加 5678 等于多少？")
+    run_react_agent("帮我算一下 1234 加 5678 等于多少？再用这个值加上1038，最后告诉我值是多少。")
