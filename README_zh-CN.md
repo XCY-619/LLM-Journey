@@ -107,3 +107,12 @@
 ### 3. 去 LangChain 化与无状态本质 (Statelessness)
 - **打破黑盒**：抛弃重型框架，使用原生 `list`、`while` 和 HTTP SDK 手写循环，获取对每一次 Request/Response Payload 的 100% 掌控权。
 - **状态伪装**：云端大模型是完全无状态的（即发即焚）。所谓的“连续多轮对话与工具调用”，本质上是我们在本地维护了一个不断膨胀的 `messages` 数组，通过不断向其中 `append` 历史（User、Assistant、Tool），并在每次 HTTP 请求时**全量重传**，强行在客户端维持了上下文状态。
+
+
+
+## 阶段 6：实战开发与多工具自主串行 (Sequential Chaining)
+- **状态**：已完成
+- **核心概念理解**：
+  1. **环境侦察与自主规划**：大模型绝不“瞎猜”未知的必填参数。通过引入 `list_directory` (目录浏览) 工具，赋予了 Agent “看”的能力。
+  2. **多轮决策链 (Planning)**：当用户需求模糊时，Agent 会自主发起多轮 API 交互（侦察目录 $\rightarrow$ 锁定目标文件 $\rightarrow$ 读取内容 $\rightarrow$ 总结），实现了从“单步指令”到“工作流规划”的跨越。
+
