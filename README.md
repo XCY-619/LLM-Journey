@@ -81,3 +81,19 @@
 1. **全量请求包 (Request)**：大模型完全无状态，每次发起 HTTP 请求时，Python 必须将 `model` 配置、工具说明书 `tools` 和完整串联的对话历史 `messages` 重新全量打包发送。
 2. **全量响应包 (Response)**：API 返回完整的 JSON 对象，包含状态码 `finish_reason`、Token 消耗 `usage` 与实际载荷 `message`。代码需手动拆包并追加回本地 `messages`。
 3. **参数智能提炼**：大模型依靠 JSON Schema 中的顶层 `description` 指令（如“提取核心词”）以及参数本身的语义约束（如“关键词”），再结合其预训练常识，自动完成从冗长自然语言到结构化 API 入参的提炼转化。
+
+
+## 阶段 5：工程化收尾与底层心智模型 (Agent Design Philosophy)
+
+### 1. 动态路由与解耦设计 (Dynamic Routing & Decoupling)
+- **高内聚低耦合**：Agent 引擎（负责发请求与状态流转）与工具库（负责查天气、算数等业务逻辑）必须完全解耦。
+- **TOOL_MAP 映射**：使用字典将大模型返回的 `func_name` 字符串映射为真实的 Python 函数对象（`TOOL_MAP[func_name]`）。
+- **新增工具法则**：未来无论增加多少工具，只需遵循“写函数 -> 加 Schema 说明书 -> 注册 TOOL_MAP”三步，核心 `while` 循环引擎 **零修改**（符合 OCP 开闭原则）。
+
+### 2. 严格的字典解包 (`**func_args`)
+- Python 的 `**` 语法可将 JSON 解析出的字典瞬间转化为函数的关键字入参（如 `{"a": 1, "b": 2}` $\rightarrow$ `a=1, b=2`）。
+- **容错边界**：解包匹配极其严格，字典的 Key 必须与 Python 函数定义的参数名一模一样，否则引发 `TypeError`。因此，`tools` 里的参数 JSON Schema 定义必须极度精准，确保大模型输出正确的 Key。
+
+### 3. 去 LangChain 化与无状态本质 (Statelessness)
+- **打破黑盒**：抛弃重型框架，使用原生 `list`、`while` 和 HTTP SDK 手写循环，获取对每一次 Request/Response Payload 的 100% 掌控权。
+- **状态伪装**：云端大模型是完全无状态的（即发即焚）。所谓的“连续多轮对话与工具调用”，本质上是我们在本地维护了一个不断膨胀的 `messages` 数组，通过不断向其中 `append` 历史（User、Assistant、Tool），并在每次 HTTP 请求时**全量重传**，强行在客户端维持了上下文状态。
